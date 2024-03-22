@@ -177,7 +177,7 @@ const GroupBoard = ({ rows, cols, size, gap }) =>
           }
         });
       });
-
+      setPrice(0);
       setColor(getRandomRGBColor());
     };
 
