@@ -58,11 +58,6 @@ const GroupBoard = ({ rows, cols, size, gap }) => {
     });
   };
 
-  const drag = (context, element) => {
-    draw(context);
-    element.draw(context);
-  };
-
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
@@ -82,7 +77,8 @@ const GroupBoard = ({ rows, cols, size, gap }) => {
 
   useEffect(() => {
     if (context && element) {
-      drag(context, element);
+      draw(context);
+      element.draw(context);
     }
   }, [element]);
 
