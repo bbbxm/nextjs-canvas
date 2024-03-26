@@ -174,7 +174,7 @@ const GroupBoard = ({
   };
 
   const updateSeat = (row: number, col: number) => {
-    if (row === rows || col === cols || row < 0 || col < 0) {
+    if (row >= rows || col >= cols || row < 0 || col < 0) {
       return;
     }
 
