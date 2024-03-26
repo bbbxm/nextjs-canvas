@@ -2,13 +2,18 @@
 import React, { useRef, useEffect, useState } from "react";
 
 class Rectangle {
-  constructor(startX, startY, endX, endY) {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  constructor(startX: number, startY: number, endX: number, endY: number) {
     this.startX = startX;
     this.startY = startY;
     this.endX = endX;
     this.endY = endY;
   }
-  draw(context) {
+  draw(context: any) {
+    context.save();
     context.beginPath();
     context.moveTo(this.startX, this.startY);
     context.lineTo(this.endX, this.startY);
@@ -17,10 +22,17 @@ class Rectangle {
     context.lineTo(this.startX, this.startY);
     context.stroke();
     context.closePath();
+    context.restore();
   }
 }
 
-function getRandomRGBColor(limit = 256) {
+interface Seat {
+  isSet: boolean;
+  color: string;
+  price: number;
+}
+
+function getRandomRGBColor(limit: number = 256) {
   //十六进制颜色随机
   const r = Math.floor(Math.random() * limit);
   const g = Math.floor(Math.random() * limit);
@@ -30,59 +42,87 @@ function getRandomRGBColor(limit = 256) {
   return color;
 }
 
-const GroupBoard = ({ rows, cols, size, gap }) => {
-  const canvasRef = useRef(null);
-  const [context, setContext] = useState(null);
-  const [seatStatus, setSeatStatus] = useState(
+const GroupBoard = ({
+  rows,
+  cols,
+  size,
+  gap,
+}: {
+  rows: number;
+  cols: number;
+  size: number;
+  gap: number;
+}) => {
+  const canvasRef = useRef<any>(null);
+  const [seatStatus, setSeatStatus] = useState<Seat[][]>(
     new Array(rows)
       .fill(null)
       .map(() =>
         new Array(cols).fill({ isSet: false, color: "#ccc", price: 0 })
       )
   );
-  const [element, setElement] = useState(null);
-  const [drawing, setDrawing] = useState(false);
-  const [color, setColor] = useState("#f00");
-  const [price, setPrice] = useState(0);
+  const [element, setElement] = useState<any>();
+  const [drawing, setDrawing] = useState<boolean>(false);
+  const [color, setColor] = useState<string>("#f00");
+  const [price, setPrice] = useState<number>(0);
 
-  const draw = (context) => {
+  const init = (context: any) => {
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    context.save();
+    context.beginPath();
+    context.moveTo(50, 50);
+    context.lineTo(50, rows * (gap + size) + gap + 50);
+    context.lineTo(
+      cols * (gap + size) + gap + 50,
+      rows * (gap + size) + gap + 50
+    );
+    context.strokeStyle = "#000";
+    context.stroke();
+    context.closePath();
+    context.beginPath();
+    context.textAlign = "center";
+    for (let i = 0; i < 12; i++) {
+      context.fillText(i + 1, 40, i * 40 + 80);
+    }
 
-    seatStatus.map((cols, row) => {
-      cols.map((item, col) => {
-        const x = col * (gap + size) + gap;
-        const y = row * (gap + size) + gap;
+    for (let i = 0; i < 24; i++) {
+      context.fillText(i + 1, i * 40 + 75, rows * (gap + size) + gap + 60);
+    }
+    context.fillStyle = "#000";
+    context.lineWidth = 0.3;
+    context.stroke();
+    context.closePath();
+    context.restore();
+  };
+
+  const draw = (context: any) => {
+    context.save();
+    seatStatus.map((cols: Seat[], row: number) => {
+      cols.map((item: Seat, col: number) => {
+        const x = col * (gap + size) + gap + 50;
+        const y = row * (gap + size) + gap + 50;
         context.fillStyle = item.isSet ? item.color : "#ccc";
         context.fillRect(x, y, size, size);
       });
     });
+    context.restore();
   };
 
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
-      canvas.width = cols * (gap + size) + gap;
-      canvas.height = rows * (gap + size) + gap;
+      canvas.width = cols * (gap + size) + gap + 100;
+      canvas.height = rows * (gap + size) + gap + 100;
       const context = canvas.getContext("2d");
-      setContext(context);
+      init(context);
       draw(context);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (context) {
-      draw(context);
-    }
-  }, [seatStatus]);
-
-  useEffect(() => {
-    if (context && element) {
-      draw(context);
-      element.draw(context);
+      if (element) {
+        element.draw(context);
+      }
     }
   }, [element]);
 
-  const handleMouseDown = (event) => {
+  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
     setDrawing(true);
 
     const clientX = event.nativeEvent.offsetX;
@@ -91,13 +131,15 @@ const GroupBoard = ({ rows, cols, size, gap }) => {
     setElement(new Rectangle(clientX, clientY, clientX, clientY));
   };
 
-  const handleMouseMove = (event) => {
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!drawing) return;
 
     const clientX = event.nativeEvent.offsetX;
     const clientY = event.nativeEvent.offsetY;
 
-    setElement(new Rectangle(element.startX, element.startY, clientX, clientY));
+    setElement(
+      new Rectangle(element!.startX, element!.startY, clientX, clientY)
+    );
   };
 
   const handleMouseUp = () => {
@@ -106,20 +148,20 @@ const GroupBoard = ({ rows, cols, size, gap }) => {
       return;
     }
     const startCol = Math.min(
-      Math.floor(element.startX / (gap + size)),
-      Math.floor(element.endX / (gap + size))
+      Math.floor((element.startX - 50) / (gap + size)),
+      Math.floor((element.endX - 50) / (gap + size))
     );
     const startRow = Math.min(
-      Math.floor(element.startY / (gap + size)),
-      Math.floor(element.endY / (gap + size))
+      Math.floor((element.startY - 50) / (gap + size)),
+      Math.floor((element.endY - 50) / (gap + size))
     );
     const endCol = Math.max(
-      Math.floor(element.startX / (gap + size)),
-      Math.floor(element.endX / (gap + size))
+      Math.floor((element.startX - 50) / (gap + size)),
+      Math.floor((element.endX - 50) / (gap + size))
     );
     const endRow = Math.max(
-      Math.floor(element.startY / (gap + size)),
-      Math.floor(element.endY / (gap + size))
+      Math.floor((element.startY - 50) / (gap + size)),
+      Math.floor((element.endY - 50) / (gap + size))
     );
 
     for (let row = startRow; row <= endRow; row++) {
@@ -131,7 +173,7 @@ const GroupBoard = ({ rows, cols, size, gap }) => {
     setElement(null);
   };
 
-  const updateSeat = (row, col) => {
+  const updateSeat = (row: number, col: number) => {
     if (row === rows || col === cols || row < 0 || col < 0) {
       return;
     }
@@ -145,10 +187,10 @@ const GroupBoard = ({ rows, cols, size, gap }) => {
     setSeatStatus(newSeatStatus);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    seatStatus.map((cols, row) => {
-      cols.map((item, col) => {
+    seatStatus.map((cols: Seat[], row: number) => {
+      cols.map((item: Seat, col: number) => {
         if (item.isSet && item.color === color) {
           const newSeatStatus = [...seatStatus];
           newSeatStatus[row][col] = {
@@ -171,7 +213,6 @@ const GroupBoard = ({ rows, cols, size, gap }) => {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseOut={handleMouseUp}
-        className="border border-gray-400"
       />
       <form className="flex justify-center" onSubmit={handleSubmit}>
         <div className="mt-2 flex rounded-md shadow-sm">
@@ -185,7 +226,7 @@ const GroupBoard = ({ rows, cols, size, gap }) => {
               id="price"
               className="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
               value={price === 0 ? "" : price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => setPrice(e.target.valueAsNumber)}
               placeholder="0.00"
             />
           </div>
